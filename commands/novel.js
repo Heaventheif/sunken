@@ -7,19 +7,13 @@ const HF_SCRAPER_URL = process.env.HF_SCRAPER_URL || "";
 // ─── كاش في الذاكرة (TTL ساعة) ─────────────────────────────
 const cache = new Map();
 const CACHE_TTL = 3600 * 1000;
-const CACHE_MAX = 100; // ← حد أقصى لمنع تضخم الذاكرة
 const cacheGet = (k) => {
   const i = cache.get(k);
   if (!i) return undefined;
   if (Date.now() > i.expires) { cache.delete(k); return undefined; }
   return i.value;
 };
-const cacheSet = (k, v) => {
-  if (cache.size >= CACHE_MAX) {
-    cache.delete(cache.keys().next().value); // احذف الأقدم (FIFO)
-  }
-  cache.set(k, { value: v, expires: Date.now() + CACHE_TTL });
-};
+const cacheSet = (k, v) => cache.set(k, { value: v, expires: Date.now() + CACHE_TTL });
 
 // ─── Headers ─────────────────────────────────────────────────
 const BROWSER_HEADERS = {
