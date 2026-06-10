@@ -1,5 +1,5 @@
 module.exports = {
-  config: { name: "kick", aliases: ["طرد", "اخرج", "remove"], version: "1.0.0", author: "Aljur Pogoy", countDown: 5, role: 1, shortDescription: { ar: "طرد عضو من المجموعة" }, category: "إشراف" },
+  config: { name: "kick", aliases: ["طرد", "اخرج", "remove"], version: "1.0.0", author: "sunken", countDown: 5, role: 1, shortDescription: { ar: "طرد عضو من المجموعة" }, category: "إشراف" },
   onStart: async ({ api, event, message }) => {
     const { threadID, messageID, senderID, mentions, messageReply } = event;
     const threadInfo = await api.getThreadInfo(threadID);
