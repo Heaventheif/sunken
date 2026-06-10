@@ -7,7 +7,7 @@ const sessionsDir = path.join(__dirname, '..', 'cache', 'ai2_sessions');
 fs.ensureDirSync(sessionsDir);
 const MODEL = "llama-3.3-70b-versatile";
 
-const SYSTEM_INSTRUCTION = `أنت بوت مساعد ذكي على فيسبوك ماسنجر اسمك "Shadow Garden Bot". أجب دائماً باللغة العربية الفصحى البسيطة، اجعل ردودك مختصرة (أقل من 200 كلمة)، لا تذكر أنك نموذج ذكاء اصطناعي، كن ودوداً ومهذباً.`;
+const SYSTEM_INSTRUCTION = `أنت بوت مساعد ذكي على فيسبوك ماسنجر اسمك "Sunken". أجب دائماً باللغة العربية الفصحى البسيطة، اجعل ردودك مختصرة (أقل من 200 كلمة)، لا تذكر أنك نموذج ذكاء اصطناعي، كن ودوداً ومهذباً.`;
 
 const groqClient = axios.create({
   baseURL: 'https://api.groq.com/openai/v1',
