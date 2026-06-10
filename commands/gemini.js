@@ -1,6 +1,6 @@
-const axios   = require("axios");
-const fs      = require("fs-extra");
-const path    = require("path");
+const axios  = require("axios");
+const fs     = require("fs-extra");
+const path   = require("path");
 
 const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY,
@@ -21,77 +21,61 @@ const nextKey = () => {
 const sessionsDir = path.join(__dirname, "..", "cache", "ai_sessions");
 fs.ensureDirSync(sessionsDir);
 
-function getSessionPath(threadID) {
-  return path.join(sessionsDir, `thread_${threadID}.json`);
-}
-async function loadSession(threadID) {
-  try {
-    const p = getSessionPath(threadID);
-    if (await fs.pathExists(p)) return await fs.readJson(p);
-  } catch (_) {}
+const getSessionPath = (tid) => path.join(sessionsDir, `thread_${tid}.json`);
+async function loadSession(tid) {
+  try { if (await fs.pathExists(getSessionPath(tid))) return await fs.readJson(getSessionPath(tid)); } catch (_) {}
   return [];
 }
-async function saveSession(threadID, context) {
-  await fs.writeJson(getSessionPath(threadID), context.slice(-10), { spaces: 0 }).catch(() => {});
+async function saveSession(tid, ctx) {
+  await fs.writeJson(getSessionPath(tid), ctx.slice(-10), { spaces: 0 }).catch(() => {});
 }
 
 const SYSTEM = `أنت بوت مساعد ذكي على فيسبوك ماسنجر اسمك "Sunken".
 - أجب بإيجاز باللغة العربية (أقل من 200 كلمة).
-- إذا أُرسلت لك صورة أو ملف، قم بوصفه وتحليله بدقة.
+- إذا أُرسلت لك صورة حللها وصفها بدقة.
 - كن ودوداً ومهذباً ومفيداً.`;
 
-async function attachmentToBase64(url) {
-  try {
-    const res = await axios.get(url, { responseType: "arraybuffer", timeout: 20000,
-      headers: { "User-Agent": "Mozilla/5.0" } });
-    return {
-      b64:  Buffer.from(res.data).toString("base64"),
-      mime: res.headers["content-type"]?.split(";")[0] || "image/jpeg",
-    };
-  } catch (e) {
-    console.warn("[GEMINI] فشل تحميل المرفق:", e.message);
-    return null;
-  }
-}
-
+// ─── بناء parts — يستخدم URL مباشرة بدون base64 ─────────────
 async function buildParts(text, attachments) {
   const parts = [];
   if (text?.trim()) parts.push({ text: text.trim() });
 
   for (const att of attachments) {
-    const url  = att.url || att.playbackUrl || att.previewUrl || att.largePreviewUrl;
     const type = (att.type || "").toLowerCase();
+    // استخدم أعلى جودة متاحة
+    const imgUrl = att.largePreviewUrl || att.url || att.previewUrl;
 
-    if (!url) {
-      console.log("[GEMINI] مرفق بدون URL:", JSON.stringify(att));
-      parts.push({ text: `[مرفق من نوع ${type || "غير معروف"} — لا يوجد رابط]` });
-      continue;
-    }
-
-    if (type === "photo" || type === "image" || url.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
-      const data = await attachmentToBase64(url);
-      if (data) {
-        parts.push({ inline_data: { mime_type: data.mime, data: data.b64 } });
-      } else {
-        parts.push({ text: `[صورة — فشل التحميل: ${url}]` });
+    if ((type === "photo" || type === "image" || att.name?.includes("image")) && imgUrl) {
+      // Gemini يقبل URL مباشرة عبر fileData
+      parts.push({
+        fileData: {
+          mimeType:  "image/jpeg",
+          fileUri:   imgUrl,
+        }
+      });
+    } else if (type === "audio" && att.url) {
+      // للصوت نحتاج base64 لأن Facebook لا يسمح بـ direct fetch
+      try {
+        const res = await axios.get(att.url, { responseType: "arraybuffer", timeout: 20000,
+          headers: { "User-Agent": "Mozilla/5.0" } });
+        parts.push({ inline_data: {
+          mime_type: "audio/mp3",
+          data: Buffer.from(res.data).toString("base64"),
+        }});
+      } catch (_) {
+        parts.push({ text: "[ملف صوتي — فشل التحميل]" });
       }
-    } else if (type === "audio" || url.match(/\.(mp3|wav|ogg|m4a|aac)/i)) {
-      const data = await attachmentToBase64(url);
-      if (data) {
-        parts.push({ inline_data: { mime_type: data.mime || "audio/mp3", data: data.b64 } });
-      } else {
-        parts.push({ text: `[صوت — فشل التحميل: ${url}]` });
-      }
-    } else if (type === "video" || url.match(/\.(mp4|webm|mov)/i)) {
-      parts.push({ text: `[فيديو: ${url}]` });
-    } else {
-      parts.push({ text: `[مرفق (${type}): ${url}]` });
+    } else if (type === "video" && att.url) {
+      parts.push({ text: `[فيديو مرفق]` });
+    } else if (att.url) {
+      parts.push({ text: `[مرفق: ${type || "ملف"}]` });
     }
   }
 
   return parts.length > 0 ? parts : [{ text: "." }];
 }
 
+// ─── Gemini مع retry تلقائي عند 429 ─────────────────────────
 async function callGemini(contents, apiKey) {
   const { data } = await axios.post(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
@@ -105,13 +89,33 @@ async function callGemini(contents, apiKey) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
 }
 
+async function callGeminiWithRetry(contents) {
+  // جرب كل المفاتيح واحداً تلو الآخر
+  for (let i = 0; i < GEMINI_KEYS.length; i++) {
+    const key = nextKey();
+    if (!key) break;
+    try {
+      const reply = await callGemini(contents, key);
+      if (reply) return reply;
+    } catch (e) {
+      if (e.response?.status === 429) {
+        console.warn(`[GEMINI] مفتاح ${i+1} تجاوز الحد — جرب التالي`);
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error("جميع مفاتيح Gemini تجاوزت الحد");
+}
+
 async function callGroq(contents) {
   if (!GROQ_API_KEY) throw new Error("No Groq Key");
   const messages = [
     { role: "system", content: SYSTEM },
     ...contents.map(c => ({
       role:    c.role === "model" ? "assistant" : "user",
-      content: c.parts.map(p => p.text || "[مرفق]").join(" "),
+      content: c.parts.map(p => p.text || "[مرفق]").filter(Boolean).join(" ") || "[مرفق]",
     })),
   ];
   const { data } = await axios.post(
@@ -125,18 +129,16 @@ async function callGroq(contents) {
 async function handleMessage(api, event, promptText, attachments) {
   const { threadID, messageID, senderID } = event;
 
-  // ─── DEBUG مؤقت — اطبع بنية المرفقات ────────────────
-  if (attachments.length > 0) {
-    console.log("[GEMINI DEBUG] attachments:", JSON.stringify(attachments, null, 2));
-  }
-
   if (promptText.toLowerCase() === "clear" || promptText === "مسح") {
     try { await fs.unlink(getSessionPath(threadID)); } catch (_) {}
     return api.sendMessage("🧹 تم مسح ذاكرة المجموعة.", threadID, null, messageID);
   }
 
   if (!promptText.trim() && !attachments.length) {
-    return api.sendMessage("اكتب سؤالك أو أرسل صورة!", threadID, null, messageID);
+    return api.sendMessage(
+      "🤖 Sunken AI\n\n📝 أرسل سؤالك أو صورة مع الأمر\n💡 مثال: .gemini ما هذه الصورة؟",
+      threadID, null, messageID
+    );
   }
 
   const context  = await loadSession(threadID);
@@ -145,16 +147,14 @@ async function handleMessage(api, event, promptText, attachments) {
 
   let reply = null;
   try {
-    const key = nextKey();
-    if (key) reply = await callGemini(contents, key);
-    else throw new Error("No Keys");
+    reply = await callGeminiWithRetry(contents);
   } catch (err) {
-    console.warn("[GEMINI] فشل:", err.message?.substring(0, 80));
+    console.warn("[GEMINI] كل المفاتيح فشلت:", err.message?.substring(0, 80));
     if (GROQ_API_KEY) {
       try { reply = await callGroq(contents); }
-      catch { return api.sendMessage("❌ تعذر الاتصال بالخوادم.", threadID, null, messageID); }
+      catch { return api.sendMessage("❌ تعذر الاتصال بالخوادم — حاول لاحقاً.", threadID, null, messageID); }
     } else {
-      return api.sendMessage("❌ تم تجاوز الحد — حاول لاحقاً.", threadID, null, messageID);
+      return api.sendMessage("❌ تم تجاوز الحد — أضف مفاتيح Gemini إضافية.", threadID, null, messageID);
     }
   }
 
@@ -183,16 +183,16 @@ module.exports = {
   config: {
     name: "gemini",
     aliases: ["بوت", "ai", "gm"],
-    version: "3.1.0",
+    version: "3.2.0",
     author: "Sunken",
     countDown: 5,
     role: 0,
-    shortDescription: { ar: "محادثة ذكية مع Gemini — يفهم الصور والصوت" },
+    shortDescription: { ar: "محادثة ذكية — يرى الصور ويفهم الصوت" },
     category: "ذكاء اصطناعي",
     guide: {
       ar:
         "{pn}gemini [سؤال]\n" +
-        "{pn}gemini [+ صورة]\n" +
+        "{pn}gemini [+ صورة] ← يحلل الصورة\n" +
         "{pn}gemini clear ← مسح ذاكرة المجموعة"
     }
   },
