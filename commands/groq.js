@@ -24,7 +24,7 @@ const setReaction = (api, reaction, messageID, threadID) => {
 };
 
 module.exports = {
-  config: { name: "groq", aliases: ["llma32", "ai2"], version: "3.1.0", author: "Aljur Pogoy", countDown: 3, role: 0, shortDescription: { ar: "محادثة مع الذكاء الاصطناعي Llama" }, category: "ذكاء اصطناعي", guide: { ar: "{pn}ai2 [سؤالك]\n{pn}ai2 مسح - لمسح الذاكرة" } },
+  config: { name: "groq", aliases: ["llma32", "ai2"], version: "3.1.0", author: "sunken", countDown: 3, role: 0, shortDescription: { ar: "محادثة مع الذكاء الاصطناعي Llama" }, category: "ذكاء اصطناعي", guide: { ar: "{pn}ai2 [سؤالك]\n{pn}ai2 مسح - لمسح الذاكرة" } },
   onStart: async ({ api, event, args, message }) => {
     const { threadID, messageID, senderID } = event;
     let prompt = args.join(" ");
