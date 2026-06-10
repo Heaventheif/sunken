@@ -6,7 +6,8 @@
   "type": "commonjs",
   "scripts": {
     "start": "node start.js",
-    "bot-only": "node --no-warnings index.js"
+    "bot-only": "node --no-warnings index.js",
+    "postinstall": "npm rebuild sqlite3 --update-binary || true"
   },
   "dependencies": {
     "@dongdev/fca-unofficial": "^4.0.3",

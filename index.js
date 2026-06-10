@@ -345,7 +345,7 @@ const startBot = async () => {
       updatePresence:  false,
       selfListen:      false,
       online:          true,
-      autoMarkDelivery: false,
+
       autoMarkRead:    false,
       listenTyping:    false,
     });
@@ -385,25 +385,18 @@ const startBot = async () => {
       ));
     }, 30 * 60 * 1000);
 
-    // ─── حماية الجلسة ────────────────────────────────────
+    // ─── حماية الجلسة (اختياري) ───────────────────────────
     try {
-      const sessionGuard = require("./session-guard");
+      const sgPath = require.resolve("./session-guard");
+      const sessionGuard = require(sgPath);
       sessionGuard.init(api, {
         onSuspended: (msg) => {
           console.error("[SESSION] 🔴 الجلسة معلقة:", msg);
-          // أخطر المشرف إذا كان botApi لا يزال يعمل
           const adminId = global.config.admins?.[0];
-          if (adminId) {
-            api.sendMessage(
-              "⚠️ تحذير: الجلسة معلقة أو منتهية!\nيرجى تجديد الـ appstate.",
-              adminId
-            ).catch(() => {});
-          }
+          if (adminId) api.sendMessage("⚠️ الجلسة معلقة — جدد الـ appstate.", adminId).catch(() => {});
         }
       });
-    } catch (e) {
-      console.warn("[SESSION] ⚠️ session-guard غير متاح:", e.message);
-    }
+    } catch (_) { /* session-guard غير موجود — يُتجاهل */ }
 
     // SoundCloud webhook (اختياري — يُتجاهل إن لم يكن الملف موجوداً)
     try {
