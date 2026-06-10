@@ -3,7 +3,7 @@ module.exports = {
     name: "unsend",
     aliases: ["حذف", "امسح", "غلط", "حذف_الرسالة", "unsent"],
     version: "1.1.0",
-    author: "NTKhang | Enhanced",
+    author: "sunken",
     countDown: 3,
     role: 0,
     nonPrefix: true,
