@@ -277,10 +277,15 @@ const handleMessage = async (api, event) => {
 const handleEvent = async (api, event) => {
   for (const cmd of global.eventCommands) {
     try {
-      if (cmd.onChat) await cmd.onChat({
-        api, event,
-        message: { reply: t => api.sendMessage(t, event.threadID, null, event.messageID) }
-      });
+      // onChat يعمل فقط على رسائل حقيقية تحمل body و messageID
+      // أحداث log/event/typ لا تحمل messageID فتُسبب خطأ setMessageReaction
+      if (cmd.onChat) {
+        if (!event.messageID || !event.body) continue;
+        await cmd.onChat({
+          api, event,
+          message: { reply: t => api.sendMessage(t, event.threadID, null, event.messageID) }
+        });
+      }
     } catch (_) {}
   }
 };
