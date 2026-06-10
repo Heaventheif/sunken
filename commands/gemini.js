@@ -15,7 +15,7 @@ function getNextGeminiKey() {
 
 const sessionsDir = path.join(__dirname, '..', 'cache', 'ai_sessions');
 fs.ensureDirSync(sessionsDir);
-const SYSTEM_INSTRUCTION = `أنت بوت مساعد ذكي على فيسبوك ماسنجر اسمك "Shadow Garden Bot". أجب بإيجاز باللغة العربية (أقل من 150 كلمة). كن ودوداً ومهذباً.`;
+const SYSTEM_INSTRUCTION = `أنت بوت مساعد ذكي على فيسبوك ماسنجر اسمك "sunken". أجب بإيجاز باللغة العربية (أقل من 150 كلمة). كن ودوداً ومهذباً.`;
 
 // 🛡️ دالة تفاعل حصينة تمنع تعطل البوت تماماً
 const setReaction = (api, reaction, messageID, threadID) => {
