@@ -8,7 +8,7 @@ const openai = new OpenAI({ baseURL: "https://models.inference.ai.azure.com", ap
 
 const sessionsDir = path.join(__dirname, '..', 'cache', 'ai_sessions_gptx');
 fs.ensureDirSync(sessionsDir);
-const SYSTEM_PROMPT = `أنت مساعد ذكي اسمك "Shadow Garden Bot". أجب بإيجاز باللغة العربية (أقل من 150 كلمة). كن ودوداً ومهذباً.`;
+const SYSTEM_PROMPT = `أنت مساعد ذكي اسمك "Sunken". أجب بإيجاز باللغة العربية (أقل من 150 كلمة). كن ودوداً ومهذباً.`;
 
 // 🛡️ دالة تفاعل حصينة
 const setReaction = (api, reaction, messageID, threadID) => {
@@ -111,7 +111,7 @@ async function handleMessage(api, event, message, prompt) {
 }
 
 module.exports = {
-  config: { name: "gptx", version: "1.1.0", author: "Shadow Garden", countDown: 3, role: 0, usePrefix: false, shortDescription: { ar: "GPT-4o | ذاكرة جماعية | ردود تلقائية | يفهم الصور" }, category: "ذكاء اصطناعي", guide: { ar: "gptx [سؤالك] ← بدء محادثة\nردّ على رسالة البوت ← يكمل تلقائياً\nردّ على صورة ← يحللها\ngptx مسح ← مسح ذاكرة المجموعة" } },
+  config: { name: "gptx", version: "1.1.0", author: "Sunken", countDown: 3, role: 0, usePrefix: false, shortDescription: { ar: "GPT-4o | ذاكرة جماعية | ردود تلقائية | يفهم الصور" }, category: "ذكاء اصطناعي", guide: { ar: "gptx [سؤالك] ← بدء محادثة\nردّ على رسالة البوت ← يكمل تلقائياً\nردّ على صورة ← يحللها\ngptx مسح ← مسح ذاكرة المجموعة" } },
   onStart: async ({ api, event, args, message }) => {
     let prompt = args.join(" ").trim();
     if (!prompt && event.messageReply) prompt = event.messageReply.body || "";
