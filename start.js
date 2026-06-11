@@ -42,10 +42,8 @@ function startBot() {
     console.log(`[Bot] ⏹️ انتهى بكود: ${code}`);
     botProcess.removeAllListeners(); // ← منع memory leak
     botProcess = null;
-    if (code !== 0) {
-      console.log("[Bot] 🔄 إعادة التشغيل خلال 5 ثواني...");
-      setTimeout(startBot, 5000);
-    }
+    console.log("[Bot] 🔄 إعادة التشغيل خلال 5 ثواني...");
+    setTimeout(startBot, 5000);
   });
 }
 

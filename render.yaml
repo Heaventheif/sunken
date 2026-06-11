@@ -3,7 +3,7 @@ services:
     name: SunkenBot
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm rebuild sqlite3 --build-from-source
     startCommand: node start.js
     healthCheckPath: /api/health
     envVars:
