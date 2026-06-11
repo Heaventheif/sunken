@@ -54,7 +54,7 @@ const react = (api, emoji, mid, tid) => {
   try {
     if (!emoji || !mid || !tid) return;
     if (String(mid) === "undefined" || String(tid) === "undefined") return;
-    api.setMessageReaction(String(emoji), String(mid), () => {}, String(tid));
+    api.setMessageReaction({ reaction: String(emoji), messageID: String(mid), threadID: String(tid) }, () => {});
   } catch (_) {}
 };
 

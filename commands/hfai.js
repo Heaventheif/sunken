@@ -41,7 +41,7 @@ const react = (api, emoji, msgID, tidID) => {
   try {
     if (!emoji || !msgID || !tidID) return;
     if (String(msgID) === "undefined" || String(tidID) === "undefined") return;
-    api.setMessageReaction(String(emoji), String(msgID), () => {}, String(tidID));
+    api.setMessageReaction({ reaction: String(emoji), messageID: String(msgID), threadID: String(tidID) }, () => {});
   } catch (_) {}
 };
 
