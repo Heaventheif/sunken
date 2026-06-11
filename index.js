@@ -38,7 +38,7 @@ global.disabledGroups   = {};
 
 const fs    = require("fs-extra");
 const path  = require("path");
-const login = require("@dongdev/fca-unofficial");
+const login = require("@anbuinfosec/fca-unofficial");
 const chalk = require("chalk");
 
 try { require("dotenv").config(); } catch (_) {}
