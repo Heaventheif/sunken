@@ -1,6 +1,9 @@
 /* jshint esversion: 11 */
 "use strict";
 
+// ─── sqlite3 mock (Render لا يدعم native bindings) ───────────
+require("./sqlite3-mock.js");
+
 // ─── Global Error Handlers ────────────────────────────────────
 process.on("unhandledRejection", (reason) => {
   const msg = String(reason?.message || reason || "");
